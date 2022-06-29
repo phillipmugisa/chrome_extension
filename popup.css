@@ -1,0 +1,29 @@
+.ext-container {
+  width: 280px;
+  color: #314d3e;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: bold;
+  padding: 8px;
+}
+
+.ext-download-btn-area {
+  position: fixed;
+  inset-inline-end: 30px;
+  inset-block-end: 30px;
+  overflow: hidden;
+  z-index: 100;
+}
+
+.ext-download-btn {
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  background-color: #FF4747;
+  color: #ffffff;
+  box-shadow: 2px 2px 2px rgba(89, 87, 87, 0.241);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

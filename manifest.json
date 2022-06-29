@@ -1,0 +1,27 @@
+{
+    "name": "AliExpress Image Downloader",
+    "version": "1.0.0",
+    "description": "Download all AliExpress Product Images",
+    "permissions": ["downloads", "activeTab", "tabs"],
+    "host_permissions": ["https://*.aliexpress.com/*"],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "content_scripts": [
+      {
+        "matches": ["https://*.aliexpress.com/*"],
+        "js": ["contentScript.js"],
+        "css": ["popup.css"]
+      }
+    ],
+    "action": {
+      "default_icon": {
+        "16": "assets/ext-icon.png",
+        "24": "assets/ext-icon.png",
+        "32": "assets/ext-icon.png"
+      },
+      "default_title": "AliExpress Image Downloader",
+      "default_popup": "popup.html"
+    },
+    "manifest_version": 3
+}
