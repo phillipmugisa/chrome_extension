@@ -11,8 +11,7 @@ chrome.tabs.onUpdated.addListener((tabId, tab) => {
 
 function handleDownloadMessage(request, sender, sendResponse) {
   
-  if (request.type === "DOWNLOAD") {    
-    console.log(request.products)
+  if (request.type === "DOWNLOAD") {
     request.products.forEach(product => {
 
       // fetch image

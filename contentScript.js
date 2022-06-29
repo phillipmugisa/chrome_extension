@@ -45,22 +45,36 @@
             productSection = document.querySelector('._2AlTf')
         }
 
-        
+           
+        const downloadBtn = document.querySelector('.ext-download-btn');
+        downloadBtn.disabled = true;
+
         const productImgs = productSection.querySelectorAll('img.product-img');
         productImgs.forEach(imgElem => {
-            let imgSrc = imgElem.src;
-
-            // get product name
-            const productName = imgElem.parentElement.parentElement.querySelector('._18_85').textContent;
-
-            products.push({"productName" : productName, "imgUrl" : imgSrc});
-        })
-
+                       
+            let imgSrc;
+            fetch(imgElem.src)
+            .then(response => response.blob())
+            .then(blob => {
+                imgSrc = URL.createObjectURL(blob);
+                
+                // get product name
+                const productName = imgElem.parentElement.parentElement.querySelector('._18_85').textContent;
+                
+                products.push({"productName" : productName, "imgUrl" : imgSrc});
+            })
+            
+        });
+        
         // trigger download
         chrome.runtime.sendMessage({
             type: "DOWNLOAD",
             products: products
-        })
+        });
+
+        // activate button
+        setTimeout(() => downloadBtn.disabled = false, 500);
+        
     }
 
     newProductsLoaded();
