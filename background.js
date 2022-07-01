@@ -1,10 +1,9 @@
 chrome.tabs.onUpdated.addListener((tabId, tab) => {
-  if (tab.url && tab.url.includes("aliexpress.com/category")) {
-    const queryParameters = tab.url.split("?")[1];
+  if (tab.url && (tab.url.includes("aliexpress.com/category") || tab.url.includes("aliexpress.com/item"))) {
 
     // send message to content scripts
     chrome.tabs.sendMessage(tabId, {
-      type: "NEW",
+      type: "PRODUCTS",
     });
   }
 });

@@ -9,7 +9,7 @@
     },
     "content_scripts": [
       {
-        "matches": ["https://*.aliexpress.com/*"],
+        "matches": ["https://*.aliexpress.com/category/*", "https://*.aliexpress.com/item/*"],
         "js": ["contentScript.js"],
         "css": ["popup.css"]
       }
