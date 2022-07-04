@@ -11,13 +11,15 @@ chrome.tabs.onUpdated.addListener((tabId, tab) => {
 function handleDownloadMessage(request, sender, sendResponse) {
   
   if (request.type === "DOWNLOAD") {
-    request.products.forEach(product => {
-
-      // fetch image
       chrome.downloads.download({
-        url: product['imgUrl']
+        url: request.url
       });
-    });
+//    request.products.forEach(product => {
+      // fetch image
+//      chrome.downloads.download({
+//        url: product['imgUrl']
+//      });
+//    });
   }
 
   sendResponse();

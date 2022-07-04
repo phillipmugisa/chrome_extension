@@ -1,6 +1,4 @@
 (() => {
-    let products = [];
-
     // listen for message from service worker
     chrome.runtime.onMessage.addListener((obj, sender, response) => {
         const { type, products } = obj;
@@ -20,29 +18,44 @@
             downloadBtnDiv.className = "ext-download-btn-area";            
             
             // image download btn
-            const downloadImagesBtn = document.createElement("button");
-            downloadImagesBtn.className = "ext-download-btn";
-            downloadImagesBtn.id = "img-download";
-            downloadImagesBtn.textContent = "Download Images";
+		if (document.querySelector('.product-container'))
+		{
+		    const downloadImagesBtn = document.createElement("button");
+		    downloadImagesBtn.className = "ext-download-btn";
+		    downloadImagesBtn.id = "img-download";
+		    downloadImagesBtn.textContent = "Download Images";
 
-            downloadBtnDiv.appendChild(downloadImagesBtn);
+		    downloadBtnDiv.appendChild(downloadImagesBtn);
+		    downloadImagesBtn.addEventListener("click", downloadImageEventListener);
+		}
+            
+	    // description download btn
+		else if (document.querySelector('.product-main'))
+		{
+		    const downloadDescritionImgBtn = document.createElement("button");
+		    downloadDescritionImgBtn.className = "ext-download-btn";
+		    downloadDescritionImgBtn.id = "img-download";
+		    downloadDescritionImgBtn.textContent = "Download Description Images";
+
+		    downloadBtnDiv.appendChild(downloadDescritionImgBtn);
+		    downloadDescritionImgBtn.addEventListener("click", downloadImageEventListener);
+		}
 
             // check if page has video
-            if (document.querySelector("video"))
-            {
-                // vidoe download btn
-                const downloadVideosBtn = document.createElement("button");
-                downloadVideosBtn.className = "ext-download-btn";
-                downloadImagesBtn.id = "video-download";
-                downloadVideosBtn.textContent = "Download Vidoes";
-                downloadBtnDiv.appendChild(downloadVideosBtn);
-                downloadVideosBtn.addEventListener("click", downloadVideoEventListener);
-            }            
+		    if (document.querySelector("video"))
+		    {
+			// vidoe download btn
+			const downloadVideosBtn = document.createElement("button");
+			downloadVideosBtn.className = "ext-download-btn";
+			downloadVideosBtn.id = "video-download";
+			downloadVideosBtn.textContent = "Download Vidoes";
+			downloadBtnDiv.appendChild(downloadVideosBtn);
+			downloadVideosBtn.addEventListener("click", downloadVideoEventListener);
+		    }            
 
             let bodyElem = document.querySelector(".hm-right");
             bodyElem.appendChild(downloadBtnDiv);
             
-            downloadImagesBtn.addEventListener("click", downloadImageEventListener);
         }
     }
 
@@ -61,7 +74,7 @@
     function toJpeg (img){
         return new Promise(function (resolve) {
             var xhr = new XMLHttpRequest();
-                xhr.open("get", img.src, true);
+                xhr.open("get", img, true);
                 xhr.responseType = "blob";
                 xhr.onload = function () {
                     if (this.status == 200) {
@@ -85,7 +98,6 @@
                                 // Start
                                 context.drawImage(newImg, 0, 0);
                                 // Get jpeg Base64
-                                // img.src = canvas.toDataURL("image/jpeg");
                                 resolve(canvas.toDataURL('image/jpeg'));
                             };
                             // Load Webp Base64
@@ -98,7 +110,10 @@
         })
     }
 
-    const downloadImageEventListener = async () => {
+    const downloadImageEventListener = async (e) => {
+	e.target.disabled = true;
+	e.target.classList.add("loading");
+
         let productSection = getProductSection();
 
         // check if user is on products pages
@@ -106,65 +121,47 @@
         {
             const productImgs = productSection.querySelectorAll('img.product-img');
             
-            new Promise((resolve) => {
                 productImgs.forEach(imgElem => {
-                    toJpeg(imgElem)
+                    toJpeg(imgElem.src.replace('.jpg_220x220xz',""))
                         .then(url => {
-                            products.push({"imgUrl" : url});
+                            performDownload(url, e.target);
                         });            
                 });
-                resolve();
-            })
-                .then(() => performDownload(products));
         }
         else
         {
             // on description page
-            let imgs = document.querySelectorAll('.product-main img:not(.simple-card-img):not(.product-img), .detailmodule_image img');
+            let imgs = document.querySelectorAll('.product-main .images-view-list img');
 
-            new Promise((resolve) => {
-                imgs.forEach(imgElem => {
-                    toJpeg(imgElem)
-                        .then(url => {
-                            products.push({"imgUrl" : url});
-                        });            
-                });
-                resolve();
-            })
-                .then(() => performDownload(products));
+		imgs.forEach(imgElem => {
+		    toJpeg(imgElem.src.replace("jpg_50x50", "jpg_Q90"))
+			.then(url => {
+				// we are download each img once it is converted
+				// removed products array to remove delay when button is clicked
+				performDownload(url, e.target);
+			});            
+		});
         }        
     }
 
-    const downloadVideoEventListener = () => {
+    const downloadVideoEventListener = (e) => {
+	e.target.disabled = true;
+	e.target.classList.add("loading")
 
-        let productSection = getProductSection();
-
-        const productVideos = productSection.querySelectorAll('video');
-        productVideos.forEach(imgElem => {
-                       
-            let videoSrc;
-            fetch(imgElem.src)
-            .then(response => response.blob())
-            .then(blob => {
-                videoSrc = URL.createObjectURL(blob);
-                
-                // get product name
-                const productName = imgElem.parentElement.parentElement.querySelector('._18_85').textContent;
-                
-                products.push({"productName" : productName, "imgUrl" : videoSrc});
-            })
-            
+        const productVideos = document.querySelectorAll('video');
+        productVideos.forEach(videoElem => {
+            performDownload(videoElem.src, e.target);
         });
-        performDownload(products);
     }
 
-    const performDownload = (products) => {
+    const performDownload = (imgUrl, eventActivator) => {
         // trigger download
         chrome.runtime.sendMessage({
             type: "DOWNLOAD",
-            products: products
+            url: imgUrl
         }, () => {
-            products = [];
+		eventActivator.disabled = false;
+		eventActivator.classList.remove("loading")
         });
     }
 

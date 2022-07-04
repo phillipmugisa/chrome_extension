@@ -40,3 +40,6 @@
 .ext-download-btn:hover {
   background-color: hsl(0, 100%, 55%);
 }
+.ext-download-btn.loading {
+	cursor: disabled;
+}
