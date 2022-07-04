@@ -134,7 +134,7 @@
             let imgs = document.querySelectorAll('.product-main .images-view-list img');
 
 		imgs.forEach(imgElem => {
-		    toJpeg(imgElem.src.includes('png_50x50') ? imgElem.src.replace("png_50x50", "png_Q90")):imgElem.src.replace("jpg_50x50", "jpg_Q90"))
+		    toJpeg(imgElem.src.includes('png_50x50') ? imgElem.src.replace("png_50x50", "png_Q90") : imgElem.src.replace("jpg_50x50", "jpg_Q90"))
 			.then(url => {
 				// we are download each img once it is converted
 				// removed products array to remove delay when button is clicked
