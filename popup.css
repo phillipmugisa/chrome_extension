@@ -9,7 +9,7 @@
   padding: 8px;
 }
 
-.ext-download-btn-area {
+.ext-component-area {
   position: fixed;
   inset-inline-start: 30px;
   inset-block-end: 30px;
@@ -18,10 +18,90 @@
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
+  flex-direction: column-reverse;
+  align-items: flex-start;
 }
 
+#ext-activator {
+  inline-size: 4rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background-image: url('https://bk.ibxk.com.br/2015/11/programas/11578001112151635.png');
+  background-position: center;background-size: cover;
+  background-repeat: no-repeat;
+  background-color: #FF4747;
+}
+
+#selection-popup {
+  display: grid;
+  padding: 1rem;
+  border-radius: 10px;
+  animation-name: popupEnter;
+  animation-duration: 0.3s;
+  animation-timing-function: ease-in;
+  background-color: white;
+  box-shadow: 2px 2px 2px rgba(109, 107, 107, 0.241), -2px -2px 2px rgba(122, 120, 120, 0.241);
+}
+
+@keyframes popupEnter {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+#title-area {
+  padding: 10px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-transform: capitalize;
+}
+
+#title-area h3 {
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-transform: capitalize;
+  color: hsl(0, 0%, 0%);
+}
+
+#popup-form b {
+  font-size: .9rem;
+  font-weight: bold;
+  color: hsl(0, 100%, 60%);
+}
+
+#popup-form {
+  display: grid;
+  gap: 1rem;
+  padding: 15px;
+  border-radius: 10px;
+  background-color: hsla(0, 100%, 75%, 0.1);
+}
+
+#popup-form .form-group {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+#popup-form .form-group label {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+
+
+
+
+
+
+
+
+
 .ext-download-btn {
-  padding: 1rem 2rem;
+  padding: .5rem 1.5rem;
   font-size: 18px;
   background-color: #FF4747;
   color: #ffffff;

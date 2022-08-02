@@ -1,5 +1,5 @@
 {
-    "name": "AliExpress Image Downloader",
+    "name": "AliExpress Media Downloader",
     "version": "1.0.0",
     "description": "Download all AliExpress Product Images",
     "permissions": ["downloads", "activeTab", "tabs"],

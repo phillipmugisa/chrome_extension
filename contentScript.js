@@ -1,74 +1,186 @@
 (() => {
     // listen for message from service worker
     chrome.runtime.onMessage.addListener((obj, sender, response) => {
-        const { type, products } = obj;
+        const { type } = obj;
 
-        if (type === "PRODUCTS") {
-            newProductsLoaded('products');
+        if (type === "NEW_PRODUCT_LOADED") {
+            newProductLoaded();
         }
     });
 
-    const newProductsLoaded = async (page) => {
-        const downloadBtnExists = document.querySelector("download-btn");
 
-        if (!downloadBtnExists) {
-            // adding custom download button to our page
-            const downloadBtnDiv = document.createElement("div");
-            
-            downloadBtnDiv.className = "ext-download-btn-area";            
-            
-            // image download btn
-		if (document.querySelector('.product-container'))
-		{
-		    const downloadImagesBtn = document.createElement("button");
-		    downloadImagesBtn.className = "ext-download-btn";
-		    downloadImagesBtn.id = "img-download";
-		    downloadImagesBtn.textContent = "Download Images";
+    // render extension components
+    const newProductLoaded = async () => {
+        const extensionComponentArea = document.querySelector("ext-component-area");
 
-		    downloadBtnDiv.appendChild(downloadImagesBtn);
-		    downloadImagesBtn.addEventListener("click", downloadImageEventListener);
-		}
-            
-	    // description download btn
-		else if (document.querySelector('.product-main'))
-		{
-		    const downloadDescritionImgBtn = document.createElement("button");
-		    downloadDescritionImgBtn.className = "ext-download-btn";
-		    downloadDescritionImgBtn.id = "img-download";
-		    downloadDescritionImgBtn.textContent = "Download Description Images";
+        if (!extensionComponentArea) {
+            // if not exists
+            const extensionComponentArea = document.createElement("div");            
+            extensionComponentArea.className = "ext-component-area";   
 
-		    downloadBtnDiv.appendChild(downloadDescritionImgBtn);
-		    downloadDescritionImgBtn.addEventListener("click", downloadImageEventListener);
-		}
-
-            // check if page has video
-		    if (document.querySelector("video"))
-		    {
-			// vidoe download btn
-			const downloadVideosBtn = document.createElement("button");
-			downloadVideosBtn.className = "ext-download-btn";
-			downloadVideosBtn.id = "video-download";
-			downloadVideosBtn.textContent = "Download Vidoes";
-			downloadBtnDiv.appendChild(downloadVideosBtn);
-			downloadVideosBtn.addEventListener("click", downloadVideoEventListener);
-		    }            
+            // detect extension activator
+            if (!document.getElementById('ext-activator')) {
+                // add extension activator
+                const extensionActivator = document.createElement('button');
+                extensionActivator.id = 'ext-activator';
+                extensionComponentArea.appendChild(extensionActivator);
+                extensionActivator.addEventListener("click",() =>  showSelectionPopup(extensionComponentArea));
+            }
 
             let bodyElem = document.querySelector(".hm-right");
-            bodyElem.appendChild(downloadBtnDiv);
-            
+            bodyElem.appendChild(extensionComponentArea);
+
         }
     }
 
-    const getProductSection = () => {        
-        let productSection = null;
-        if (document.querySelector('.JIIxO')) {
-            productSection = document.querySelector('.JIIxO')
-        }
-        else
+    const showSelectionPopup = (extensionComponentArea) => {
+
+        if (document.getElementById('selection-popup'))
         {
-            productSection = document.querySelector('._2AlTf')
+            let selectionPopup = document.getElementById('selection-popup');
+            // reset form
+            selectionPopup.querySelector('form').reset();
+            extensionComponentArea.removeChild(selectionPopup);
+            return;
         }
-        return productSection;
+
+        const selectionPopup = document.createElement('div');
+        selectionPopup.id = 'selection-popup';
+        extensionComponentArea.appendChild(selectionPopup);
+
+        // add pop up title
+        const titleArea = document.createElement('div');
+        titleArea.id = 'title-area';
+        const title = document.createElement('h3');
+        title.id = 'title';
+        title.textContent = "Select Desired Features";
+       
+        titleArea.appendChild(title);
+        selectionPopup.appendChild(titleArea);
+
+        const popupForm = document.createElement('form');
+        popupForm.id = 'popup-form';
+        selectionPopup.appendChild(popupForm);
+
+
+        const msg = document.createElement('b');
+        popupForm.appendChild(msg)
+
+        // form checkboxes
+        const formCheckBoxData = [{'name': 'main-image', 'label' : 'Main Product Images'}, {'name': 'variation-images', 'label' : 'Variation Images'},{'name': 'description-images', 'label' : 'Description Images'},{'name': 'product-videos', 'label' : 'Product Videos'}];
+
+        for (let i=0; i < formCheckBoxData.length; i++) {
+            let formGroup = document.createElement('div');
+            formGroup.className = 'form-group';
+
+            // checkbox
+            let checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.name = formCheckBoxData[i].name;
+            checkbox.value = formCheckBoxData[i].label;
+            checkbox.id = formCheckBoxData[i].name;
+
+            // label
+            let label = document.createElement('label');
+            label.htmlFor = checkbox.id;
+            label.textContent = formCheckBoxData[i].label;
+            
+            formGroup.appendChild(checkbox);
+            formGroup.appendChild(label);
+            popupForm.appendChild(formGroup);
+        }
+
+        // add download btn
+        const downloadBtn = document.createElement("button");
+        downloadBtn.className = "ext-download-btn";
+        downloadBtn.textContent = "Download";
+
+        popupForm.appendChild(downloadBtn);
+        downloadBtn.addEventListener("click", (e) => {
+            e.preventDefault()
+            // atleast one feature selected
+            let selectedFeatures = new Array()
+            popupForm.querySelectorAll('input')
+                .forEach(input => {
+                    if (input.checked) {
+                        selectedFeatures.push(input.value);
+                    }
+                })
+
+            if (selectedFeatures.length <= 0) {
+                // show error message
+                showPopUpError(msg, 'No feature Selected');
+            }
+            else {
+                msg.textContent = '';
+                handleDownload(msg, selectedFeatures)
+            }
+
+        });
+    }
+
+    const showPopUpError = (elem, msg) => {
+        elem.textContent = msg;
+        setTimeout(() => {
+            elem.textContent = '';
+        }, 5000)
+    }
+
+    const handleDownload = (msgElem, selectedFeatures) => {
+        // check login status
+        let user = loggedInUser();
+
+        // check subscription status
+        let userSubscriptionFeatures = getSubscriptionFeatures(user);
+
+        // compare features
+        selectedFeatures.forEach(
+            (feature) => {
+                if (!userSubscriptionFeatures['features'].includes(feature)) {
+                    showPopUpError(msgElem, `Upgrade Package`);
+                    return;
+                }
+            }
+        )
+
+        // download main products
+        if (selectedFeatures.includes('Main Product Images')) {
+            downloadProductMain();
+            return;
+        }
+
+        // download variation image
+        if (selectedFeatures.includes('Variation Images')) {
+            downloadVariationImages ();
+            return;
+        }
+
+        // download description images
+        if (selectedFeatures.includes('Description Images')) {
+            downloadDescriptionImages();
+            return;
+        }
+
+        // downloaf product video
+        if (selectedFeatures.includes('Product Videos')) {
+            downloadProductVideos();
+            return;
+        }
+    }
+
+    const loggedInUser = () => {
+        
+    }
+
+    const getSubscriptionFeatures = (user) => {
+        // request to backend
+
+        let results = {
+            "user" : 1,
+            "features" : ['Main Product Images', 'Variation Images', 'Description Images', 'Product Videos']
+        }
+
+        return results;
     }
 
     function toJpeg (img){
@@ -110,60 +222,87 @@
         })
     }
 
-    const downloadImageEventListener = async (e) => {
-	e.target.disabled = true;
-	e.target.classList.add("loading");
+    const downloadProductMain = () => {
+        let targetImages = document.querySelectorAll('.images-view-list img');
 
-        let productSection = getProductSection();
-
-        // check if user is on products pages
-        if (productSection && productSection != null)
-        {
-            const productImgs = productSection.querySelectorAll('img.product-img');
-            
-                productImgs.forEach(imgElem => {
-                    toJpeg(imgElem.src.replace('.jpg_220x220xz',""))
-                        .then(url => {
-                            performDownload(url, e.target);
-                        });            
-                });
+        if (targetImages != null && targetImages != undefined) {
+            targetImages.forEach(image => {
+                let imageSrc = image.src;
+    
+                // get jpg src
+                let linkParts = imageSrc.split('.');
+                let generateSrc = `${linkParts[0]}.${linkParts[1]}.${linkParts[2]}.jpg`;
+    
+                // to jpeg
+                // download image
+                toJpeg(generateSrc)
+                    .then(url => performDownload(url, 'product-images'));
+                
+            })
         }
-        else
-        {
-            // on description page
-            let imgs = document.querySelectorAll('.product-main .images-view-list img');
-
-		imgs.forEach(imgElem => {
-		    toJpeg(imgElem.src.includes('png_50x50') ? imgElem.src.replace("png_50x50", "png_Q90") : imgElem.src.replace("jpg_50x50", "jpg_Q90"))
-			.then(url => {
-				// we are download each img once it is converted
-				// removed products array to remove delay when button is clicked
-				performDownload(url, e.target);
-			});            
-		});
-        }        
     }
 
-    const downloadVideoEventListener = (e) => {
-	e.target.disabled = true;
-	e.target.classList.add("loading")
+    const downloadVariationImages = () => { 
+        let targetImages = document.querySelectorAll('.sku-property-list img');
 
+        if (targetImages != null && targetImages != undefined) {
+            targetImages.forEach(image => {
+                let imageSrc = image.src;
+    
+                // get jpg src
+                let linkParts = imageSrc.split('.');
+                let generateSrc = `${linkParts[0]}.${linkParts[1]}.${linkParts[2]}.jpg`;
+    
+                // to jpeg
+                // download image
+                toJpeg(generateSrc)
+                    .then(url => performDownload(url, 'variation-imgs'));
+                
+            })
+        }
+    }
+
+    const downloadDescriptionImages = () => {
+        let targetImages = document.querySelectorAll('.detailmodule_image img');
+
+        console.log(targetImages)
+
+        if (targetImages != null && targetImages != undefined) {
+            targetImages.forEach(image => {
+                let imageSrc = image.src;
+    
+                // get jpg src
+                let linkParts = imageSrc.split('.');
+                let generateSrc = `${linkParts[0]}.${linkParts[1]}.${linkParts[2]}.jpg`;
+    
+                // to jpeg
+                // download image
+                toJpeg(generateSrc)
+                    .then(url => performDownload(url, 'description-images'));
+                
+            })
+        }
+    }
+
+    const downloadProductVideos = () => {
         const productVideos = document.querySelectorAll('video');
         productVideos.forEach(videoElem => {
-            performDownload(videoElem.src, e.target);
+            performDownload(videoElem.src, 'videos');
         });
     }
 
-    const performDownload = (imgUrl, eventActivator) => {
+    const performDownload = (imgUrl, subfolder) => {
+        let productName = document.querySelector('.product-title-text').textContent;
+
         // trigger download
         chrome.runtime.sendMessage({
-            type: "DOWNLOAD",
-            url: imgUrl
-        }, () => {
-		eventActivator.disabled = false;
-		eventActivator.classList.remove("loading")
+                type: "DOWNLOAD",
+                subfolder: subfolder,
+                productName: productName.split(' ').join('-'),
+                url: imgUrl
+            }, () => {
         });
     }
 
-    newProductsLoaded();
-})();
+    newProductLoaded();
+})()

@@ -1,25 +1,21 @@
-chrome.tabs.onUpdated.addListener((tabId, tab) => {
-  if (tab.url && (tab.url.includes("aliexpress.com/category") || tab.url.includes("aliexpress.com/item"))) {
-
-    // send message to content scripts
-    chrome.tabs.sendMessage(tabId, {
-      type: "PRODUCTS",
-    });
+chrome.tabs.onUpdated.addListener( function (tabId, changeInfo, tab) {
+  if (changeInfo.status == 'complete') {
+    if (tab.url && tab.url.includes("aliexpress.com/item")) {
+      // send message to content scripts
+      chrome.tabs.sendMessage(tabId, {
+        type: "NEW_PRODUCT_LOADED",
+      });
+    }
   }
-});
+})
+
 
 function handleDownloadMessage(request, sender, sendResponse) {
   
   if (request.type === "DOWNLOAD") {
-      chrome.downloads.download({
+      chrome.downloads.download({filename: `Aliexpress-media/${request.productName}/${request.subfolder}/${new Date().getSeconds()}.jpg`, url: request.url} ,{
         url: request.url
       });
-//    request.products.forEach(product => {
-      // fetch image
-//      chrome.downloads.download({
-//        url: product['imgUrl']
-//      });
-//    });
   }
 
   sendResponse();
