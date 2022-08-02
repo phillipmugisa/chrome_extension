@@ -12,10 +12,15 @@ chrome.tabs.onUpdated.addListener( function (tabId, changeInfo, tab) {
 
 function handleDownloadMessage(request, sender, sendResponse) {
   
-  if (request.type === "DOWNLOAD") {
+  if (request.type === "MASTER_PACKAGE_DOWNLOAD") {
       chrome.downloads.download({filename: `Aliexpress-media/${request.productName}/${request.subfolder}/${new Date().getSeconds()}.jpg`, url: request.url} ,{
         url: request.url
       });
+  }
+  else {
+    chrome.downloads.download({
+      url: request.url
+    });
   }
 
   sendResponse();

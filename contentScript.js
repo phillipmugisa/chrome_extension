@@ -177,6 +177,7 @@
 
         let results = {
             "user" : 1,
+            "package": "Starter",
             "features" : ['Main Product Images', 'Variation Images', 'Description Images', 'Product Videos']
         }
 
@@ -294,9 +295,16 @@
     const performDownload = (imgUrl, subfolder) => {
         let productName = document.querySelector('.product-title-text').textContent;
 
+        let REQUEST_TYPE = 'DOWNLOAD';
+
+        if ("Master" === getSubscriptionFeatures()['package'])
+        {
+            REQUEST_TYPE = 'MASTER_PACKAGE_DOWNLOAD';
+        }
+
         // trigger download
         chrome.runtime.sendMessage({
-                type: "DOWNLOAD",
+                type:  REQUEST_TYPE,
                 subfolder: subfolder,
                 productName: productName.split(' ').join('-'),
                 url: imgUrl
