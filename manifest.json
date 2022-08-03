@@ -2,8 +2,8 @@
     "name": "AliExpress Media Downloader",
     "version": "1.0.0",
     "description": "Download all AliExpress Product Images",
-    "permissions": ["downloads", "activeTab", "tabs"],
-    "host_permissions": ["https://*.aliexpress.com/*"],
+    "permissions": ["downloads", "activeTab", "tabs", "cookies", "storage"],
+    "host_permissions": ["https://*.aliexpress.com/*", "http://*.localhost:8000/*"],
     "background": {
       "service_worker": "background.js"
     },

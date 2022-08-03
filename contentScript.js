@@ -1,10 +1,19 @@
 (() => {
-    // listen for message from service worker
-    chrome.runtime.onMessage.addListener((obj, sender, response) => {
-        const { type } = obj;
 
-        if (type === "NEW_PRODUCT_LOADED") {
+    let PRICING;
+    const backend_url = 'http://localhost:8000/';
+
+    // listen for message from service worker
+    chrome.runtime.onMessage.addListener((obj, sender) => {
+
+        if (obj.type === "NEW_PRODUCT_LOADED") {
             newProductLoaded();
+        }
+
+        if (obj.type === "USER_LOGGED_IN") {
+            localStorage.setItem('aliexpress_extension_access_token', obj.aliexpress_extension_access_token)
+            localStorage.setItem('aliexpress_extension_refresh_token', obj.aliexpress_extension_refresh_token)
+            handleDownload();
         }
     });
 
@@ -128,60 +137,130 @@
 
     const handleDownload = (msgElem, selectedFeatures) => {
         // check login status
-        let user = loggedInUser();
+        loggedInUser()
+        .then(__resp => {
+            if (__resp) {
+                // check subscription status
+                getSubscriptionFeatures()
+                .then(userSubscriptionFeatures => {
+                    if (userSubscriptionFeatures) {
+            
+                        PRICING = userSubscriptionFeatures['pricing'];
+                        // compare features
+                        if (!selectedFeatures) return;
+                        selectedFeatures.forEach(
+                            (feature) => {
+                                if (!userSubscriptionFeatures['features'].includes(feature)) {
+                                    showPopUpError(msgElem, `Upgrade Package`);
+                                    return;
+                                }
+                                else {
+                        
+                                    // download main products
+                                    if (feature == 'Main Product Images') {
+                                        downloadProductMain();
+                                        return;
+                                    }
+                            
+                                    // download variation image
+                                    if (feature == 'Variation Images') {
+                                        downloadVariationImages();
+                                        return;
+                                    }
+                            
+                                    // download description images
+                                    if (feature == 'Description Images') {
+                                        downloadDescriptionImages();
+                                        return;
+                                    }
+                            
+                                    // downloaf product video
+                                    if (feature == 'Product Videos') {
+                                        downloadProductVideos();
+                                        return;
+                                    }
+                                }
+                            }
+                        )
+                    }
 
-        // check subscription status
-        let userSubscriptionFeatures = getSubscriptionFeatures(user);
+                })
+        
+            }
+        })
 
-        // compare features
-        selectedFeatures.forEach(
-            (feature) => {
-                if (!userSubscriptionFeatures['features'].includes(feature)) {
-                    showPopUpError(msgElem, `Upgrade Package`);
-                    return;
+    }
+
+    const makeRequest = async (data, passed_url) => {
+
+        return await fetch(`${backend_url}api/${passed_url}`, {
+            method: "POST",
+            headers: {
+                'Content-Type' : 'application/json',
+                Authorization: localStorage.getItem('aliexpress_extension_refresh_token') ? "JWT " + localStorage.getItem('aliexpress_extension_refresh_token') : null,
+            },
+            mode: "cors",
+            cache: "no-cache",
+            redirect: 'follow',
+            referrerPolicy: 'no-referrer',
+            body: JSON.stringify(data)
+        });
+    }
+
+    const loggedInUser = async () => {
+        if (localStorage.getItem('aliexpress_extension_refresh_token'))
+            {
+                const _resp = await makeRequest({
+                    "refresh": localStorage.getItem('aliexpress_extension_refresh_token')
+                }, 'token/refresh/')
+                if (_resp.status === 200) {
+                    const _jsonResponse = await _resp.json();
+                    // reset access token
+                    localStorage.setItem('aliexpress_extension_access_token', _jsonResponse.access);
+                    return true;
+                }
+                else
+                {
+                    chrome.runtime.sendMessage({
+                            type:  'LOGIN'
+                        }, () => {
+                    });
+                    localStorage.clear();
                 }
             }
-        )
+            else
+            {
+                logInUser()
+            }
+            return false;
 
-        // download main products
-        if (selectedFeatures.includes('Main Product Images')) {
-            downloadProductMain();
-            return;
-        }
-
-        // download variation image
-        if (selectedFeatures.includes('Variation Images')) {
-            downloadVariationImages ();
-            return;
-        }
-
-        // download description images
-        if (selectedFeatures.includes('Description Images')) {
-            downloadDescriptionImages();
-            return;
-        }
-
-        // downloaf product video
-        if (selectedFeatures.includes('Product Videos')) {
-            downloadProductVideos();
-            return;
-        }
     }
 
-    const loggedInUser = () => {
-        
-    }
-
-    const getSubscriptionFeatures = (user) => {
+    const getSubscriptionFeatures = async () => {
         // request to backend
-
-        let results = {
-            "user" : 1,
-            "package": "Starter",
-            "features" : ['Main Product Images', 'Variation Images', 'Description Images', 'Product Videos']
+        const _resp = await fetch(`${backend_url}api/subscriptions/aliexpress/`, {
+            method: "GET",
+            headers: {
+                'Content-Type' : 'application/json',
+                Authorization: localStorage.getItem('aliexpress_extension_access_token') ? "JWT " + localStorage.getItem('aliexpress_extension_access_token') : null,
+            }
+        });
+        
+        if (_resp.status >= 200 && _resp.status <= 299) {
+            const data = await _resp.json();
+            return {
+                "user" : 1,
+                "package": data.package,
+                "pricing": data.pricing,
+                "features" : data.features
+            }
+        }
+        else {
+            logInUser()
+            return null;
         }
 
-        return results;
+
     }
 
     function toJpeg (img){
@@ -292,19 +371,21 @@
         });
     }
 
+    const logInUser = () => {
+
+        chrome.runtime.sendMessage({
+                    type:  'LOGIN'
+                }, () => {
+            });
+
+    }
+
     const performDownload = (imgUrl, subfolder) => {
         let productName = document.querySelector('.product-title-text').textContent;
-
-        let REQUEST_TYPE = 'DOWNLOAD';
-
-        if ("Master" === getSubscriptionFeatures()['package'])
-        {
-            REQUEST_TYPE = 'MASTER_PACKAGE_DOWNLOAD';
-        }
-
         // trigger download
         chrome.runtime.sendMessage({
-                type:  REQUEST_TYPE,
+                type:  'DOWNLOAD',
+                pricing:  PRICING,
                 subfolder: subfolder,
                 productName: productName.split(' ').join('-'),
                 url: imgUrl
